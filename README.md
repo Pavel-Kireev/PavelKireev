@@ -2,7 +2,7 @@
 
 Назначение имен и IP Адресов
 
-ISP
+```ISP
 
 hostnamectl set-hostname ISP
 apt-cdrom add
@@ -10,6 +10,7 @@ apt install -y network-manager bind9 chrony
 nmcli connection modify Wired\ connection\ 1 conn.autoconnect yes conn.interface-name ens192 ipv4.method manual ipv4.addresses '3.3.3.1/24'
 nmcli connection modify Wired\ connection\ 2 conn.autoconnect yes conn.interface-name ens224 ipv4.method manual ipv4.addresses '4.4.4.1/24'
 nmcli connection modify Wired\ connection\ 3 conn.autoconnect yes conn.interface-name ens256 ipv4.method manual ipv4.addresses '5.5.5.1/24'
+```
 
 RTR-L
 
