@@ -4,7 +4,6 @@
 
 ISP
 ```ISP
-
 hostnamectl set-hostname ISP
 apt-cdrom add
 apt install -y network-manager bind9 chrony 
