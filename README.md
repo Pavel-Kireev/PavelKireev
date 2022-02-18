@@ -21,6 +21,27 @@ no sh
 int gi 2
 ip address 192.168.100.254 255.255.255.0
 no sh
+
+ip route 0.0.0.0 0.0.0.0 4.4.4.1
+
+int gi 1
+ip nat outside
+!
+int gi 2
+ip nat inside
+!
+access-list 1 permit 192.168.100.0 0.0.0.255
+ip nat inside source list 1 interface Gi1 overload
+
+interface Tunne 1
+ip address 172.16.1.1 255.255.255.0
+tunnel mode gre ip
+tunnel source 4.4.4.100
+tunnel destination 5.5.5.100
+
+router eigrp 6500
+network 192.168.100.0 0.0.0.255
+network 172.16.1.0 0.0.0.255
 ```
 
 RTR-R
@@ -32,6 +53,27 @@ no sh
 int gi 2
 ip address 172.16.100.254 255.255.255.0
 no sh
+
+ip route 0.0.0.0 0.0.0.0 5.5.5.1
+
+int gi 1
+ip nat outside
+!
+int gi 2
+ip nat inside
+!
+access-list 1 permit 172.16.100.0 0.0.0.255
+ip nat inside source list 1 interface Gi1 overload
+
+interface Tunne 1
+ip address 172.16.1.2 255.255.255.0
+tunnel mode gre ip
+tunnel source 5.5.5.100
+tunnel destination 4.4.4.100
+
+router eigrp 6500
+network 172.16.100.0 0.0.0.255
+network 172.16.1.0 0.0.0.255
 ```
 
 SRV
