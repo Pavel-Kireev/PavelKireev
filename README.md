@@ -13,7 +13,23 @@ nmcli connection modify Wired\ connection\ 3 conn.autoconnect yes conn.interface
 
 nano /etc/sysctl.conf
 net.ipv4.ip_forward=1
-sysctl -p
+sysctl -0
+
+apt-cdrom add
+apt install -y bind9
+mkdir /opt/dns
+cp /etc/bind/db.local /opt/dns/demo.db
+chown -R bind:bind /opt/dns
+nano /etc/apparmor.d/usr.sbin.named
+    /opt/dns/** rw,
+systemctl restart apparmor.service
+   nano /etc/bind/named.conf.options
+nano /etc/bind/named.conf.default-zones
+zone "demo.wsr" {
+   type master;
+   allow-transfer { any; };
+   file "/opt/dns/demo.db";
+};
 ```
 
 RTR-L
