@@ -10,6 +10,10 @@ apt install -y network-manager bind9 chrony
 nmcli connection modify Wired\ connection\ 1 conn.autoconnect yes conn.interface-name ens192 ipv4.method manual ipv4.addresses '3.3.3.1/24'
 nmcli connection modify Wired\ connection\ 2 conn.autoconnect yes conn.interface-name ens224 ipv4.method manual ipv4.addresses '4.4.4.1/24'
 nmcli connection modify Wired\ connection\ 3 conn.autoconnect yes conn.interface-name ens256 ipv4.method manual ipv4.addresses '5.5.5.1/24'
+
+nano /etc/sysctl.conf
+net.ipv4.ip_forward=1
+sysctl -p
 ```
 
 RTR-L
@@ -63,15 +67,15 @@ tunnel mode ipsec ipv4
 tunnel protection ipsec profile VTI
 
 ip access-list extended Lnew
-permit tcp any any established
-permit udp host 4.4.4.100 eq 53 any
-permit udp host 5.5.5.1 eq 123 any
-permit tcp any host 4.4.4.100 eq 80 
-permit tcp any host 4.4.4.100 eq 443 
-permit tcp any host 4.4.4.100 eq 2222 
-permit udp host 5.5.5.100 host 4.4.4.100 eq 500
-permit esp any any
-permit icmp any any
+    permit tcp any any established
+    permit udp host 4.4.4.100 eq 53 any
+    permit udp host 5.5.5.1 eq 123 any
+    permit tcp any host 4.4.4.100 eq 80 
+    permit tcp any host 4.4.4.100 eq 443 
+    permit tcp any host 4.4.4.100 eq 2222 
+    permit udp host 5.5.5.100 host 4.4.4.100 eq 500
+    permit esp any any
+    permit icmp any any
 
 int gi 1 
 ip access-group Lnew in
@@ -132,13 +136,13 @@ tunnel mode ipsec ipv4
 tunnel protection ipsec profile VTI
 
 ip access-list extended Rnew
-permit tcp any any established
-permit tcp any host 5.5.5.100 eq 80 
-permit tcp any host 5.5.5.100 eq 443 
-permit tcp any host 5.5.5.100 eq 2244 
-permit udp host 4.4.4.100 host 5.5.5.100 eq 500
-permit esp any any
-permit icmp any any
+    permit tcp any any established
+    permit tcp any host 5.5.5.100 eq 80 
+    permit tcp any host 5.5.5.100 eq 443 
+    permit tcp any host 5.5.5.100 eq 2244 
+    permit udp host 4.4.4.100 host 5.5.5.100 eq 500
+    permit esp any any
+    permit icmp any any
 
 int gi 1 
 ip access-group Rnew in
@@ -162,6 +166,11 @@ apt-cdrom add
 apt install -y network-manager
 nmcli connection show
 nmcli connection modify Wired\ connection\ 1 conn.autoconnect yes conn.interface-name ens192 ipv4.method manual ipv4.addresses '192.168.100.100/24' ipv4.dns 192.168.100.200 ipv4.gateway 192.168.100.254
+
+apt-cdrom add
+apt install -y openssh-server ssh
+systemctl start sshd
+systemctl enable ssh
 ```
 
 WEB-R
@@ -171,6 +180,11 @@ apt-cdrom add
 apt install -y network-manager
 nmcli connection show
 nmcli connection modify Wired\ connection\ 1 conn.autoconnect yes conn.interface-name ens192 ipv4.method manual ipv4.addresses '172.16.100.100/24' ipv4.dns 192.168.100.200 ipv4.gateway 172.16.100.254
+
+apt-cdrom add
+apt install -y openssh-server ssh
+systemctl start sshd
+systemctl enable ssh
 ```
 
 CLI
