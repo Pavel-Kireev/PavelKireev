@@ -42,6 +42,41 @@ tunnel destination 5.5.5.100
 router eigrp 6500
 network 192.168.100.0 0.0.0.255
 network 172.16.1.0 0.0.0.255
+
+crypto isakmp policy 1
+encr aes
+authentication pre-share
+hash sha256
+group 14
+
+crypto isakmp key TheSecretMustBeAtLeast13bytes address 5.5.5.100
+crypto isakmp nat keepalive 5
+
+crypto ipsec transform-set TSET  esp-aes 256 esp-sha256-hmac
+mode tunnel
+
+crypto ipsec profile VTI
+set transform-set TSET
+
+interface Tunnel1
+tunnel mode ipsec ipv4
+tunnel protection ipsec profile VTI
+
+ip access-list extended Lnew
+permit tcp any any established
+permit udp host 4.4.4.100 eq 53 any
+permit udp host 5.5.5.1 eq 123 any
+permit tcp any host 4.4.4.100 eq 80 
+permit tcp any host 4.4.4.100 eq 443 
+permit tcp any host 4.4.4.100 eq 2222 
+permit udp host 5.5.5.100 host 4.4.4.100 eq 500
+permit esp any any
+permit icmp any any
+
+int gi 1 
+ip access-group Lnew in
+
+ip nat inside source static tcp 192.168.100.100 22 4.4.4.100 2222
 ```
 
 RTR-R
@@ -74,6 +109,41 @@ tunnel destination 4.4.4.100
 router eigrp 6500
 network 172.16.100.0 0.0.0.255
 network 172.16.1.0 0.0.0.255
+
+conf t
+
+crypto isakmp policy 1
+encr aes
+authentication pre-share
+hash sha256
+group 14
+
+crypto isakmp key TheSecretMustBeAtLeast13bytes address 4.4.4.100
+crypto isakmp nat keepalive 5
+
+crypto ipsec transform-set TSET  esp-aes 256 esp-sha256-hmac
+mode tunnel
+
+crypto ipsec profile VTI
+set transform-set TSET
+
+interface Tunnel1
+tunnel mode ipsec ipv4
+tunnel protection ipsec profile VTI
+
+ip access-list extended Rnew
+permit tcp any any established
+permit tcp any host 5.5.5.100 eq 80 
+permit tcp any host 5.5.5.100 eq 443 
+permit tcp any host 5.5.5.100 eq 2244 
+permit udp host 4.4.4.100 host 5.5.5.100 eq 500
+permit esp any any
+permit icmp any any
+
+int gi 1 
+ip access-group Rnew in
+
+ip nat inside source static tcp 172.16.100.100 22 5.5.5.100 2244
 ```
 
 SRV
