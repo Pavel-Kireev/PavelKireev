@@ -30,41 +30,41 @@ ip route 0.0.0.0 0.0.0.0 4.4.4.1
 
 int gi 1
 ip nat outside
-!
+
 int gi 2
 ip nat inside
-!
+
 access-list 1 permit 192.168.100.0 0.0.0.255
 ip nat inside source list 1 interface Gi1 overload
 
 interface Tunne 1
-ip address 172.16.1.1 255.255.255.0
-tunnel mode gre ip
-tunnel source 4.4.4.100
-tunnel destination 5.5.5.100
+        ip address 172.16.1.1 255.255.255.0
+        tunnel mode gre ip
+        tunnel source 4.4.4.100
+        tunnel destination 5.5.5.100
 
 router eigrp 6500
 network 192.168.100.0 0.0.0.255
 network 172.16.1.0 0.0.0.255
 
 crypto isakmp policy 1
-encr aes
-authentication pre-share
-hash sha256
-group 14
+        encr aes
+        authentication pre-share
+        hash sha256
+        group 14
 
 crypto isakmp key TheSecretMustBeAtLeast13bytes address 5.5.5.100
 crypto isakmp nat keepalive 5
 
 crypto ipsec transform-set TSET  esp-aes 256 esp-sha256-hmac
-mode tunnel
+        mode tunnel
 
 crypto ipsec profile VTI
-set transform-set TSET
+        set transform-set TSET
 
 interface Tunnel1
-tunnel mode ipsec ipv4
-tunnel protection ipsec profile VTI
+        tunnel mode ipsec ipv4
+        tunnel protection ipsec profile VTI
 
 ip access-list extended Lnew
     permit tcp any any established
