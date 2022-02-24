@@ -30,6 +30,26 @@ zone "demo.wsr" {
    allow-transfer { any; };
    file "/opt/dns/demo.db";
 };
+
+nano /opt/dns/demo.db
+
+@ IN SOA demo.wsr. root.demo.wsr.(
+
+@ IN NS isp.demo.wsr.
+isp IN A 3.3.3.1
+www IN A 4.4.4.100
+www IN A 5.5.5.100
+internet CNAME isp.demo.wsr.
+int IN NS rtr-l.demo.wsr.
+rtr-l IN  A 4.4.4.100
+systemctl restart bind9
+
+apt install -y chrony
+nano /etc/chrony/chrony.conf
+local stratum 4
+allow 4.4.4.0/24
+allow 3.3.3.0/24
+systemctl restart chronyd 
 ```
 
 RTR-L
@@ -97,6 +117,13 @@ int gi 1
 ip access-group Lnew in
 
 ip nat inside source static tcp 192.168.100.100 22 4.4.4.100 2222
+
+ip nat inside source static tcp 192.168.100.200 53 4.4.4.100 53
+ip nat inside source static udp 192.168.100.200 53 4.4.4.100 53
+
+ip domain name int.demo.wsr
+ip name-server 192.168.100.200
+ntp server ntp.int.demo.wsr
 ```
 
 RTR-R
@@ -164,6 +191,10 @@ int gi 1
 ip access-group Rnew in
 
 ip nat inside source static tcp 172.16.100.100 22 5.5.5.100 2244
+
+ip domain name int.demo.wsr
+ip name-server 192.168.100.200
+ntp server ntp.int.demo.wsr
 ```
 
 SRV
@@ -173,6 +204,41 @@ $GetIndex = Get-NetAdapter
 New-NetIPAddress -InterfaceIndex $GetIndex.ifIndex -IPAddress 192.168.100.200 -PrefixLength 24 -DefaultGateway 192.168.100.254
 Set-DnsClientServerAddress -InterfaceIndex $GetIndex.ifIndex -ServerAddresses ("192.168.100.200","4.4.4.1")
 Set-NetFirewallRule -DisplayGroup "File And Printer Sharing" -Enabled True -Profile Any
+
+Install-WindowsFeature -Name DNS -IncludeManagementTools
+Add-DnsServerPrimaryZone -Name "int.demo.wsr" -ZoneFile "int.demo.wsr.dns"
+Add-DnsServerPrimaryZone -NetworkId 192.168.100.0/24 -ZoneFile "int.demo.wsr.dns"
+Add-DnsServerPrimaryZone -NetworkId 172.16.100.0/24 -ZoneFile "int.demo.wsr.dns"
+
+Add-DnsServerResourceRecordA -Name "web-l" -ZoneName "int.demo.wsr" -AllowUpdateAny -IPv4Address "192.168.100.100" -CreatePtr 
+Add-DnsServerResourceRecordA -Name "web-r" -ZoneName "int.demo.wsr" -AllowUpdateAny -IPv4Address "172.16.100.100" -CreatePtr 
+Add-DnsServerResourceRecordA -Name "srv" -ZoneName "int.demo.wsr" -AllowUpdateAny -IPv4Address "192.168.100.200" -CreatePtr 
+Add-DnsServerResourceRecordA -Name "rtr-l" -ZoneName "int.demo.wsr" -AllowUpdateAny -IPv4Address "192.168.100.254" -CreatePtr 
+Add-DnsServerResourceRecordA -Name "rtr-r" -ZoneName "int.demo.wsr" -AllowUpdateAny -IPv4Address "172.16.100.254" -CreatePtr
+
+Add-DnsServerResourceRecordCName -Name "webapp1" -HostNameAlias "web-l.int.demo.wsr" -ZoneName "int.demo.wsr"
+Add-DnsServerResourceRecordCName -Name "webapp2" -HostNameAlias "web-r.int.demo.wsr" -ZoneName "int.demo.wsr"
+Add-DnsServerResourceRecordCName -Name "ntp" -HostNameAlias "srv.int.demo.wsr" -ZoneName "int.demo.wsr"
+Add-DnsServerResourceRecordCName -Name "dns" -HostNameAlias "srv.int.demo.wsr" -ZoneName "int.demo.wsr"
+
+New-NetFirewallRule -DisplayName "NTP" -Direction Inbound -LocalPort 123 -Protocol UDP -Action Allow
+w32tm /query /status
+Start-Service W32Time
+w32tm /config /manualpeerlist:4.4.4.1 /syncfromflags:manual /reliable:yes /update
+Restart-Service W32Time
+
+get-disk
+set-disk -Number 1 -IsOffline $false
+set-disk -Number 2 -IsOffline $false
+New-StoragePool -FriendlyName "POOLRAID1" -StorageSubsystemFriendlyName "Windows Storage*" -PhysicalDisks (Get-PhysicalDisk -CanPool $true)
+New-VirtualDisk -StoragePoolFriendlyName "POOLRAID1" -FriendlyName "RAID1" -ResiliencySettingName Mirror -UseMaximumSize
+Initialize-Disk -FriendlyName "RAID1"
+New-Partition -DiskNumber 3 -UseMaximumSize -DriveLetter R
+Format-Volume -DriveLetter R
+
+Install-WindowsFeature -Name FS-FileServer -IncludeManagementTools
+New-Item -Path R:\storage -ItemType Directory
+New-SmbShare -Name "SMB" -Path "R:\storage" -FullAccess "Everyone"
 ```
 
 WEB-L
@@ -187,6 +253,13 @@ apt-cdrom add
 apt install -y openssh-server ssh
 systemctl start sshd
 systemctl enable ssh
+
+apt-cdrom add
+apt install -y chrony 
+nano /etc/chrony/chrony.conf
+pool ntp.int.demo.wsr iburst
+allow 192.168.100.0/24
+systemctl restart chrony
 ```
 
 WEB-R
@@ -198,9 +271,11 @@ nmcli connection show
 nmcli connection modify Wired\ connection\ 1 conn.autoconnect yes conn.interface-name ens192 ipv4.method manual ipv4.addresses '172.16.100.100/24' ipv4.dns 192.168.100.200 ipv4.gateway 172.16.100.254
 
 apt-cdrom add
-apt install -y openssh-server ssh
-systemctl start sshd
-systemctl enable ssh
+apt install -y chrony 
+nano /etc/chrony/chrony.conf
+pool ntp.int.demo.wsr iburst
+allow 192.168.100.0/24
+systemctl restart chrony
 ```
 
 CLI
@@ -209,4 +284,9 @@ Rename-Computer -NewName CLI
 $GetIndex = Get-NetAdapter
 New-NetIPAddress -InterfaceIndex $GetIndex.ifIndex -IPAddress 3.3.3.10 -PrefixLength 24 -DefaultGateway 3.3.3.1
 Set-DnsClientServerAddress -InterfaceIndex $GetIndex.ifIndex -ServerAddresses ("3.3.3.1")
+New-NetFirewallRule -DisplayName "NTP" -Direction Inbound -LocalPort 123 -Protocol UDP -Action Allow
+Start-Service W32Time
+w32tm /config /manualpeerlist:4.4.4.1 /syncfromflags:manual /reliable:yes /update
+Restart-Service W32Time
+Set-Service -Name W32Time -StartupType Automatic
 ```
