@@ -124,6 +124,12 @@ ip nat inside source static udp 192.168.100.200 53 4.4.4.100 53
 ip domain name int.demo.wsr
 ip name-server 192.168.100.200
 ntp server ntp.int.demo.wsr
+
+no ip http secure-server
+wr
+reload
+ip nat inside source static tcp 192.168.100.100 80 4.4.4.100 80 
+ip nat inside source static tcp 192.168.100.100 443 4.4.4.100 443 
 ```
 
 RTR-R
@@ -195,6 +201,12 @@ ip nat inside source static tcp 172.16.100.100 22 5.5.5.100 2244
 ip domain name int.demo.wsr
 ip name-server 192.168.100.200
 ntp server ntp.int.demo.wsr
+
+no ip http secure-server
+wr
+reload
+ip nat inside source static tcp 172.16.100.100 80 5.5.5.100 80 
+ip nat inside source static tcp 172.16.100.100 443 5.5.5.100 443 
 ```
 
 SRV
@@ -239,6 +251,19 @@ Format-Volume -DriveLetter R
 Install-WindowsFeature -Name FS-FileServer -IncludeManagementTools
 New-Item -Path R:\storage -ItemType Directory
 New-SmbShare -Name "SMB" -Path "R:\storage" -FullAccess "Everyone"
+
+Install-WindowsFeature -Name AD-Certificate, ADCS-Web-Enrollment -IncludeManagementTools
+Install-AdcsCertificationAuthority -CAType StandaloneRootCa -CACommonName "Demo.wsr" -force
+Install-AdcsWebEnrollment -Confirm -force
+New-SelfSignedCertificate -subject "localhost" 
+Get-ChildItem cert:\LocalMachine\My
+Move-item Cert:\LocalMachine\My\XFX2DX02779XFD1F6F4X8435A5X26ED2X8DEFX95 -destination Cert:\LocalMachine\Webhosting\
+New-IISSiteBinding -Name 'Default Web Site' -BindingInformation "*:443:" -Protocol https -CertificateThumbPrint XFX2DX02779XFD1F6F4X8435A5X26ED2X8DEFX95 
+Start-WebSite -Name "Default Web Site"
+Get-CACrlDistributionPoint | Remove-CACrlDistributionPoint -force
+Get-CAAuthorityInformationAccess |Remove-CAAuthorityInformationAccess -force
+Get-CAAuthorityInformationAccess |Remove-CAAuthorityInformationAccess -force
+Restart-Service CertSrc
 ```
 
 WEB-L
@@ -260,6 +285,17 @@ nano /etc/chrony/chrony.conf
 pool ntp.int.demo.wsr iburst
 allow 192.168.100.0/24
 systemctl restart chrony
+
+apt-cdrom add
+apt install -y docker-ce
+systemctl start docker
+systemctl enable docker
+mkdir /mnt/app
+mount /dev/sr1 /mnt/app
+docker load < /mnt/app/app.tar
+docker images
+docker run --name app  -p 8080:80 -d app
+docker ps
 ```
 
 WEB-R
@@ -276,6 +312,17 @@ nano /etc/chrony/chrony.conf
 pool ntp.int.demo.wsr iburst
 allow 192.168.100.0/24
 systemctl restart chrony
+
+apt-cdrom add
+apt install -y docker-ce
+systemctl start docker
+systemctl enable docker
+mkdir /mnt/app
+mount /dev/sr1 /mnt/app
+docker load < /mnt/app/app.tar
+docker images
+docker run --name app  -p 8080:80 -d app
+docker ps
 ```
 
 CLI
