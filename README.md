@@ -1,7 +1,5 @@
 # PavelKireev![Схема (Киреев С-42)](https://user-images.githubusercontent.com/90326215/154075081-0210959a-7170-4e39-aa0a-962230ce465a.png)
 
-Назначение имен и IP Адресов
-
 ISP
 ```ISP
 apt-cdrom add
@@ -204,6 +202,7 @@ SRV
 ```SRV
 Настроить DNS
 
+NTP
 New-NetFirewallRule -DisplayName "NTP" -Direction Inbound -LocalPort 123 -Protocol UDP -Action Allow
 w32tm /query /status
 Start-Service W32Time
@@ -238,6 +237,18 @@ Get-CAAuthorityInformationAccess |Remove-CAAuthorityInformationAccess -force
 Get-CAAuthorityInformationAccess |Remove-CAAuthorityInformationAccess -force
 Restart-Service CertSrc
 ```
+![150323908-1e37041d-450f-477e-9f9f-24a5f1313e54](https://user-images.githubusercontent.com/90326215/173956834-c1b3ca33-32f3-4bf0-ae57-4fe5fa9f7fc5.png)
+![150323973-2b4fd9a8-d934-4a49-8e7d-98e02efd7826](https://user-images.githubusercontent.com/90326215/173956850-78f1c0a3-a5fa-4207-abb8-005bd42b1705.png)
+![150324325-b67039dc-6d6a-4dd1-9ade-67bbcaa3a6db](https://user-images.githubusercontent.com/90326215/173956851-66cc1f15-7428-42db-8dbb-f056db92ba13.png)
+![150324402-d9e1c93a-46b0-42ac-83a0-02b97da4829b](https://user-images.githubusercontent.com/90326215/173956856-87eee0c9-8329-40d4-b0ef-71a141912086.png)
+![149763513-cb821774-83ce-40f9-a47d-eaa3941504a5](https://user-images.githubusercontent.com/90326215/173956862-fb55ec45-ca85-4bae-8fa6-eccd1574c8a6.png)
+![149763553-5a666a1c-6069-4022-9e20-1e3041d345b7](https://user-images.githubusercontent.com/90326215/173956867-b0108007-a2f6-40a5-8b6d-04a699b65d28.png)
+![149763685-b0dfb33e-ed50-4de6-937c-1aab86524df9](https://user-images.githubusercontent.com/90326215/173956869-4ac13d7b-c2fd-4afc-a9fc-23adc31cbb9f.png)
+![149763717-75fa754c-4084-4923-acd8-7dc85201fdb1](https://user-images.githubusercontent.com/90326215/173956874-1de4fca0-d999-48bd-8fc8-d94f9f295f52.png)
+![149763741-0e3281f3-b17b-4101-ad77-8dd21dfc7534](https://user-images.githubusercontent.com/90326215/173956878-72c89e1a-eca5-4dbd-946e-7bf5e3dbf761.png)
+![149763772-8f7acb37-379f-455e-9198-1117317d73ed](https://user-images.githubusercontent.com/90326215/173956881-2cc780d0-afb3-4159-a198-c0d6d1bad827.png)
+![149763807-f91c2a81-d061-49bd-9b59-b93ae0e30ef3](https://user-images.githubusercontent.com/90326215/173956884-302b7414-2ae5-4c95-8685-5d1e43c7bf10.png)
+
 
 WEB-L/WEB-R
 ```WEB-L/WEB-R
