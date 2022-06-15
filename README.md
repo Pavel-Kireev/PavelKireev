@@ -218,12 +218,22 @@ SMB
 ![Снимок экрана (198)](https://user-images.githubusercontent.com/90326215/173954579-e966b2ec-c5c4-4bfb-ba11-353e75fe5fc5.png)
 ![Снимок экрана (199)](https://user-images.githubusercontent.com/90326215/173954583-37640147-5491-44e1-8c01-5bc1d666cd1b.png)
 ![Снимок экрана (200)](https://user-images.githubusercontent.com/90326215/173954586-a26fad4b-aa96-42a5-938d-ef11e1ec37bd.png)
-
 ```
 Install-WindowsFeature -Name FS-FileServer -IncludeManagementTools
 New-Item -Path R:\storage -ItemType Directory
 New-SmbShare -Name "SMB" -Path "R:\storage" -FullAccess "Everyone"
+```
+![Снимок экрана (205)](https://user-images.githubusercontent.com/90326215/173961487-4789637b-0049-4d3c-be3e-0ec66bfa4e4b.png)
+![Снимок экрана (203)](https://user-images.githubusercontent.com/90326215/173961491-4914f7cf-e32f-4139-9ed6-f2302509ed91.png)
+![Снимок экрана (204)](https://user-images.githubusercontent.com/90326215/173961500-3710da7d-0426-48d6-b37d-fb386d075455.png)
 
+```
+NFS
+```
+![Снимок экрана (206)](https://user-images.githubusercontent.com/90326215/173961510-fc9671b1-d6ee-4af0-9d51-0ad703c52663.png)
+![Снимок экрана (207)](https://user-images.githubusercontent.com/90326215/173961518-c1054a16-0e37-402f-b4cc-c31419cd627d.png)
+
+```
 Сертификаты
 Install-WindowsFeature -Name AD-Certificate, ADCS-Web-Enrollment -IncludeManagementTools
 Install-AdcsCertificationAuthority -CAType StandaloneRootCa -CACommonName "Demo.wsr" -force
@@ -264,6 +274,7 @@ pool ntp.int.demo.wsr iburst
 allow 192.168.100.0/24
 systemctl restart chrony
 
+SMB
 nano /root/.smbclient
     username=Administrator
     password=Pa$$w0rd
@@ -272,6 +283,17 @@ nano /etc/fstab
 mkdir /opt/share
 mount -a
 
+NFS
+apt install -y nfs-common
+nano /root/.nfsclient
+    username=Administrator
+    password=Pa$$w0rd
+nano /etc/fstab
+    //srv.int.demo.wsr/nfs /opt/share nfs user,rw,_netdev,credentials=/root/.nfsclient 0 0
+mkdir /opt/share
+mount -a
+
+Docker
 nano /etc/apt/sourselist
 apt-cdrom add
 apt install -y docker-ce
@@ -284,6 +306,7 @@ docker images
 docker run --name app  -p 8080:80 -d app
 docker ps
 
+Nginx
 cd /opt/share
 openssl pkcs12 -nodes -nocerts -in www.pfx -out www.key
 
@@ -316,6 +339,7 @@ server {
 
 systemctl reload nginx
 
+SSH
 nano /etc/ssh/sshd_config
     permitRootLogin yes
 systemctl restart sshd
