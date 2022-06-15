@@ -4,26 +4,25 @@
 
 ISP
 ```ISP
-hostnamectl set-hostname ISP
 apt-cdrom add
-apt install -y network-manager bind9 chrony 
-nmcli connection modify Wired\ connection\ 1 conn.autoconnect yes conn.interface-name ens192 ipv4.method manual ipv4.addresses '3.3.3.1/24'
-nmcli connection modify Wired\ connection\ 2 conn.autoconnect yes conn.interface-name ens224 ipv4.method manual ipv4.addresses '4.4.4.1/24'
-nmcli connection modify Wired\ connection\ 3 conn.autoconnect yes conn.interface-name ens256 ipv4.method manual ipv4.addresses '5.5.5.1/24'
+apt install -y network-manager bind9 chrony
 
 nano /etc/sysctl.conf
 net.ipv4.ip_forward=1
-sysctl -0
+sysctl -p
 
-apt-cdrom add
-apt install -y bind9
 mkdir /opt/dns
 cp /etc/bind/db.local /opt/dns/demo.db
 chown -R bind:bind /opt/dns
 nano /etc/apparmor.d/usr.sbin.named
     /opt/dns/** rw,
 systemctl restart apparmor.service
-   nano /etc/bind/named.conf.options
+
+nano /etc/bind/named.conf.options
+    dnssec-validation no;
+    allow-query { any; };
+    listen-on-v6 { any: }:
+    
 nano /etc/bind/named.conf.default-zones
 zone "demo.wsr" {
    type master;
@@ -32,9 +31,7 @@ zone "demo.wsr" {
 };
 
 nano /opt/dns/demo.db
-
 @ IN SOA demo.wsr. root.demo.wsr.(
-
 @ IN NS isp.demo.wsr.
 isp IN A 3.3.3.1
 www IN A 4.4.4.100
@@ -44,7 +41,6 @@ int IN NS rtr-l.demo.wsr.
 rtr-l IN  A 4.4.4.100
 systemctl restart bind9
 
-apt install -y chrony
 nano /etc/chrony/chrony.conf
 local stratum 4
 allow 4.4.4.0/24
@@ -66,7 +62,6 @@ ip route 0.0.0.0 0.0.0.0 4.4.4.1
 
 int gi 1
 ip nat outside
-
 int gi 2
 ip nat inside
 
@@ -78,7 +73,6 @@ ip address 172.16.1.1 255.255.255.0
 tunnel mode gre ip
 tunnel source 4.4.4.100
 tunnel destination 5.5.5.100
-
 router eigrp 6500
 network 192.168.100.0 0.0.0.255
 network 172.16.1.0 0.0.0.255
@@ -117,7 +111,6 @@ int gi 1
 ip access-group Lnew in
 
 ip nat inside source static tcp 192.168.100.100 22 4.4.4.100 2222
-
 ip nat inside source static tcp 192.168.100.200 53 4.4.4.100 53
 ip nat inside source static udp 192.168.100.200 53 4.4.4.100 53
 
@@ -146,10 +139,9 @@ ip route 0.0.0.0 0.0.0.0 5.5.5.1
 
 int gi 1
 ip nat outside
-!
 int gi 2
 ip nat inside
-!
+
 access-list 1 permit 172.16.100.0 0.0.0.255
 ip nat inside source list 1 interface Gi1 overload
 
@@ -158,7 +150,6 @@ ip address 172.16.1.2 255.255.255.0
 tunnel mode gre ip
 tunnel source 5.5.5.100
 tunnel destination 4.4.4.100
-
 router eigrp 6500
 network 172.16.100.0 0.0.0.255
 network 172.16.1.0 0.0.0.255
@@ -211,27 +202,7 @@ ip nat inside source static tcp 172.16.100.100 443 5.5.5.100 443
 
 SRV
 ```SRV
-Rename-Computer -NewName SRV
-$GetIndex = Get-NetAdapter
-New-NetIPAddress -InterfaceIndex $GetIndex.ifIndex -IPAddress 192.168.100.200 -PrefixLength 24 -DefaultGateway 192.168.100.254
-Set-DnsClientServerAddress -InterfaceIndex $GetIndex.ifIndex -ServerAddresses ("192.168.100.200","4.4.4.1")
-Set-NetFirewallRule -DisplayGroup "File And Printer Sharing" -Enabled True -Profile Any
-
-Install-WindowsFeature -Name DNS -IncludeManagementTools
-Add-DnsServerPrimaryZone -Name "int.demo.wsr" -ZoneFile "int.demo.wsr.dns"
-Add-DnsServerPrimaryZone -NetworkId 192.168.100.0/24 -ZoneFile "int.demo.wsr.dns"
-Add-DnsServerPrimaryZone -NetworkId 172.16.100.0/24 -ZoneFile "int.demo.wsr.dns"
-
-Add-DnsServerResourceRecordA -Name "web-l" -ZoneName "int.demo.wsr" -AllowUpdateAny -IPv4Address "192.168.100.100" -CreatePtr 
-Add-DnsServerResourceRecordA -Name "web-r" -ZoneName "int.demo.wsr" -AllowUpdateAny -IPv4Address "172.16.100.100" -CreatePtr 
-Add-DnsServerResourceRecordA -Name "srv" -ZoneName "int.demo.wsr" -AllowUpdateAny -IPv4Address "192.168.100.200" -CreatePtr 
-Add-DnsServerResourceRecordA -Name "rtr-l" -ZoneName "int.demo.wsr" -AllowUpdateAny -IPv4Address "192.168.100.254" -CreatePtr 
-Add-DnsServerResourceRecordA -Name "rtr-r" -ZoneName "int.demo.wsr" -AllowUpdateAny -IPv4Address "172.16.100.254" -CreatePtr
-
-Add-DnsServerResourceRecordCName -Name "webapp1" -HostNameAlias "web-l.int.demo.wsr" -ZoneName "int.demo.wsr"
-Add-DnsServerResourceRecordCName -Name "webapp2" -HostNameAlias "web-r.int.demo.wsr" -ZoneName "int.demo.wsr"
-Add-DnsServerResourceRecordCName -Name "ntp" -HostNameAlias "srv.int.demo.wsr" -ZoneName "int.demo.wsr"
-Add-DnsServerResourceRecordCName -Name "dns" -HostNameAlias "srv.int.demo.wsr" -ZoneName "int.demo.wsr"
+Настроить DNS
 
 New-NetFirewallRule -DisplayName "NTP" -Direction Inbound -LocalPort 123 -Protocol UDP -Action Allow
 w32tm /query /status
@@ -239,14 +210,14 @@ Start-Service W32Time
 w32tm /config /manualpeerlist:4.4.4.1 /syncfromflags:manual /reliable:yes /update
 Restart-Service W32Time
 
-get-disk
-set-disk -Number 1 -IsOffline $false
-set-disk -Number 2 -IsOffline $false
-New-StoragePool -FriendlyName "POOLRAID1" -StorageSubsystemFriendlyName "Windows Storage*" -PhysicalDisks (Get-PhysicalDisk -CanPool $true)
-New-VirtualDisk -StoragePoolFriendlyName "POOLRAID1" -FriendlyName "RAID1" -ResiliencySettingName Mirror -UseMaximumSize
-Initialize-Disk -FriendlyName "RAID1"
-New-Partition -DiskNumber 3 -UseMaximumSize -DriveLetter R
-Format-Volume -DriveLetter R
+SMB
+![Снимок экрана (195)](https://user-images.githubusercontent.com/90326215/173954555-043c08da-42c0-4a5d-924f-75c1c139a837.png)
+![Снимок экрана (196)](https://user-images.githubusercontent.com/90326215/173954562-03aeba8e-cc19-4554-b731-96e63939218c.png)
+![Снимок экрана (197)](https://user-images.githubusercontent.com/90326215/173954572-9dbcedf1-754f-4ce8-9aac-6e26a56883ee.png)
+![Снимок экрана (198)](https://user-images.githubusercontent.com/90326215/173954579-e966b2ec-c5c4-4bfb-ba11-353e75fe5fc5.png)
+![Снимок экрана (199)](https://user-images.githubusercontent.com/90326215/173954583-37640147-5491-44e1-8c01-5bc1d666cd1b.png)
+![Снимок экрана (200)](https://user-images.githubusercontent.com/90326215/173954586-a26fad4b-aa96-42a5-938d-ef11e1ec37bd.png)
+
 
 Install-WindowsFeature -Name FS-FileServer -IncludeManagementTools
 New-Item -Path R:\storage -ItemType Directory
@@ -266,26 +237,28 @@ Get-CAAuthorityInformationAccess |Remove-CAAuthorityInformationAccess -force
 Restart-Service CertSrc
 ```
 
-WEB-L
-```WEB-L
-hostnamectl set-hostname WEB-L
+WEB-L/WEB-R
+```WEB-L/WEB-R
 apt-cdrom add
-apt install -y network-manager
-nmcli connection show
-nmcli connection modify Wired\ connection\ 1 conn.autoconnect yes conn.interface-name ens192 ipv4.method manual ipv4.addresses '192.168.100.100/24' ipv4.dns 192.168.100.200 ipv4.gateway 192.168.100.254
+apt install -y network-manager openssh-server ssh chrony cifs-utils nginx
 
-apt-cdrom add
-apt install -y openssh-server ssh
 systemctl start sshd
 systemctl enable ssh
 
-apt-cdrom add
-apt install -y chrony 
 nano /etc/chrony/chrony.conf
 pool ntp.int.demo.wsr iburst
 allow 192.168.100.0/24
 systemctl restart chrony
 
+nano /root/.smbclient
+    username=Administrator
+    password=Pa$$w0rd
+nano /etc/fstab
+    //srv.int.demo.wsr/smb /opt/share cifs user,rw,_netdev,credentials=/root/.smbclient 0 0
+mkdir /opt/share
+mount -a
+
+nano /etc/apt/sourselist
 apt-cdrom add
 apt install -y docker-ce
 systemctl start docker
@@ -296,44 +269,51 @@ docker load < /mnt/app/app.tar
 docker images
 docker run --name app  -p 8080:80 -d app
 docker ps
-```
 
-WEB-R
-```WEB-R
-hostnamectl set-hostname WEB-R
-apt-cdrom add
-apt install -y network-manager
-nmcli connection show
-nmcli connection modify Wired\ connection\ 1 conn.autoconnect yes conn.interface-name ens192 ipv4.method manual ipv4.addresses '172.16.100.100/24' ipv4.dns 192.168.100.200 ipv4.gateway 172.16.100.254
+cd /opt/share
+openssl pkcs12 -nodes -nocerts -in www.pfx -out www.key
 
-apt-cdrom add
-apt install -y chrony 
-nano /etc/chrony/chrony.conf
-pool ntp.int.demo.wsr iburst
-allow 192.168.100.0/24
-systemctl restart chrony
+openssl pkcs12 -nodes -nokeys -in www.pfx -out www.cer
+cp /opt/share/www.key /etc/nginx/www.key
 
-apt-cdrom add
-apt install -y docker-ce
-systemctl start docker
-systemctl enable docker
-mkdir /mnt/app
-mount /dev/sr1 /mnt/app
-docker load < /mnt/app/app.tar
-docker images
-docker run --name app  -p 8080:80 -d app
-docker ps
+cp /opt/share/www.cer /etc/nginx/www.cer
+nano /etc/nginx/snippets/snakeoil.conf
+
+nano /etc/nginx/sites-available/default
+upstream backend { 
+ server 192.168.100.100:8080 fail_timeout=25; 
+ server 172.16.100.100:8080 fail_timeout=25; 
+} 
+ 
+server { 
+    listen 443 ssl default_server; 
+    include snippers/snakeoil.conf;
+    server_name www.demo.wsr; 
+    location / { 
+        proxy_pass http://backend ;
+    } 
+}
+
+server { 
+    listen 80  default_server; 
+    server_name _; 
+    return 301 https://www.demo.wsr;
+}
+
+systemctl reload nginx
+
+nano /etc/ssh/sshd_config
+    permitRootLogin yes
+systemctl restart sshd
 ```
 
 CLI
 ```CLI
-Rename-Computer -NewName CLI
-$GetIndex = Get-NetAdapter
-New-NetIPAddress -InterfaceIndex $GetIndex.ifIndex -IPAddress 3.3.3.10 -PrefixLength 24 -DefaultGateway 3.3.3.1
-Set-DnsClientServerAddress -InterfaceIndex $GetIndex.ifIndex -ServerAddresses ("3.3.3.1")
 New-NetFirewallRule -DisplayName "NTP" -Direction Inbound -LocalPort 123 -Protocol UDP -Action Allow
 Start-Service W32Time
 w32tm /config /manualpeerlist:4.4.4.1 /syncfromflags:manual /reliable:yes /update
 Restart-Service W32Time
 Set-Service -Name W32Time -StartupType Automatic
+
+scp -P 2244 'root@5.5.5.100:/opt/share/ca.cer' C:\Users\user\Desktop\
 ```
