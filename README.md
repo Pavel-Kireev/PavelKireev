@@ -224,6 +224,7 @@ Install-WindowsFeature -Name FS-FileServer -IncludeManagementTools
 New-Item -Path R:\storage -ItemType Directory
 New-SmbShare -Name "SMB" -Path "R:\storage" -FullAccess "Everyone"
 
+Сертификаты
 Install-WindowsFeature -Name AD-Certificate, ADCS-Web-Enrollment -IncludeManagementTools
 Install-AdcsCertificationAuthority -CAType StandaloneRootCa -CACommonName "Demo.wsr" -force
 Install-AdcsWebEnrollment -Confirm -force
