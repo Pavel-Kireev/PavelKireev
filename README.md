@@ -209,8 +209,10 @@ w32tm /query /status
 Start-Service W32Time
 w32tm /config /manualpeerlist:4.4.4.1 /syncfromflags:manual /reliable:yes /update
 Restart-Service W32Time
-
+```
+```
 SMB
+```
 ![Снимок экрана (195)](https://user-images.githubusercontent.com/90326215/173954555-043c08da-42c0-4a5d-924f-75c1c139a837.png)
 ![Снимок экрана (196)](https://user-images.githubusercontent.com/90326215/173954562-03aeba8e-cc19-4554-b731-96e63939218c.png)
 ![Снимок экрана (197)](https://user-images.githubusercontent.com/90326215/173954572-9dbcedf1-754f-4ce8-9aac-6e26a56883ee.png)
@@ -218,7 +220,7 @@ SMB
 ![Снимок экрана (199)](https://user-images.githubusercontent.com/90326215/173954583-37640147-5491-44e1-8c01-5bc1d666cd1b.png)
 ![Снимок экрана (200)](https://user-images.githubusercontent.com/90326215/173954586-a26fad4b-aa96-42a5-938d-ef11e1ec37bd.png)
 
-
+```
 Install-WindowsFeature -Name FS-FileServer -IncludeManagementTools
 New-Item -Path R:\storage -ItemType Directory
 New-SmbShare -Name "SMB" -Path "R:\storage" -FullAccess "Everyone"
