@@ -9,6 +9,7 @@ nano /etc/sysctl.conf
 net.ipv4.ip_forward=1
 sysctl -p
 
+DNS
 mkdir /opt/dns
 cp /etc/bind/db.local /opt/dns/demo.db
 chown -R bind:bind /opt/dns
@@ -18,7 +19,7 @@ systemctl restart apparmor.service
 
 nano /etc/bind/named.conf.options
     dnssec-validation no;
-    allow-query { any; };
+    allow-query {any; };
     listen-on-v6 { any: }:
     
 nano /etc/bind/named.conf.default-zones
@@ -75,25 +76,23 @@ router eigrp 6500
 network 192.168.100.0 0.0.0.255
 network 172.16.1.0 0.0.0.255
 
+IPSEC
 crypto isakmp policy 1
 encr aes
 authentication pre-share
 hash sha256
 group 14
-
-crypto isakmp key TheSecretMustBeAtLeast13bytes address 5.5.5.100
+crypto isakmp key TheSecretMustBeAtLeast13bytes address 4.4.4.100
 crypto isakmp nat keepalive 5
-
-crypto ipsec transform-set TSET  esp-aes 256 esp-sha256-hmac
+crypto ipsec transform-set TSET esp-aes 256 esp-sha256-hmac
 mode tunnel
-
 crypto ipsec profile VTI
 set transform-set TSET
-
 interface Tunnel1
 tunnel mode ipsec ipv4
 tunnel protection ipsec profile VTI
 
+ACL
 ip access-list extended Lnew
     permit tcp any any established
     permit udp host 4.4.4.100 eq 53 any
@@ -107,7 +106,6 @@ ip access-list extended Lnew
 
 int gi 1 
 ip access-group Lnew in
-
 ip nat inside source static tcp 192.168.100.100 22 4.4.4.100 2222
 ip nat inside source static tcp 192.168.100.200 53 4.4.4.100 53
 ip nat inside source static udp 192.168.100.200 53 4.4.4.100 53
@@ -152,27 +150,23 @@ router eigrp 6500
 network 172.16.100.0 0.0.0.255
 network 172.16.1.0 0.0.0.255
 
-conf t
-
+IPSEC
 crypto isakmp policy 1
 encr aes
 authentication pre-share
 hash sha256
 group 14
-
 crypto isakmp key TheSecretMustBeAtLeast13bytes address 4.4.4.100
 crypto isakmp nat keepalive 5
-
-crypto ipsec transform-set TSET  esp-aes 256 esp-sha256-hmac
+crypto ipsec transform-set TSET esp-aes 256 esp-sha256-hmac
 mode tunnel
-
 crypto ipsec profile VTI
 set transform-set TSET
-
 interface Tunnel1
 tunnel mode ipsec ipv4
 tunnel protection ipsec profile VTI
 
+ACL
 ip access-list extended Rnew
     permit tcp any any established
     permit tcp any host 5.5.5.100 eq 80 
@@ -300,7 +294,7 @@ apt install -y docker-ce
 systemctl start docker
 systemctl enable docker
 mkdir /mnt/app
-mount /dev/sr1 /mnt/app
+mount /dev/sr0 /mnt/app
 docker load < /mnt/app/app.tar
 docker images
 docker run --name app  -p 8080:80 -d app
@@ -309,14 +303,15 @@ docker ps
 Nginx
 cd /opt/share
 openssl pkcs12 -nodes -nocerts -in www.pfx -out www.key
-
 openssl pkcs12 -nodes -nokeys -in www.pfx -out www.cer
 cp /opt/share/www.key /etc/nginx/www.key
-
 cp /opt/share/www.cer /etc/nginx/www.cer
 nano /etc/nginx/snippets/snakeoil.conf
+ssl_certificate /etc/nginx/www.key
+ssl_certificate_key /etc/nginx/www.cer
 
 nano /etc/nginx/sites-available/default
+
 upstream backend { 
  server 192.168.100.100:8080 fail_timeout=25; 
  server 172.16.100.100:8080 fail_timeout=25; 
@@ -324,7 +319,7 @@ upstream backend {
  
 server { 
     listen 443 ssl default_server; 
-    include snippers/snakeoil.conf;
+    include snippets/snakeoil.conf;
     server_name www.demo.wsr; 
     location / { 
         proxy_pass http://backend ;
